@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>金門達人秀-浯島之星投票</title>
+    <!-- 引入 Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        :root {
+            --poster-beige: #fdf0e0; /* 海報那種米黃色背景 */
+            --poster-pink: #f9c2cd;  /* 海報的粉紅色 */
+            --poster-blue: #a3d5e0;  /* 海報的淺藍色 */
+            --primary-blue: #2e3192; /* 深藍色標題 */
+            --star-yellow: #fff200;
+        }
+
+        body {
+            font-family: "Microsoft JhengHei", sans-serif;
+            background-color: var(--poster-beige);
+            margin: 0;
+            padding: 0;
+            color: var(--primary-blue);
+            text-align: center;
+        }
+
+        .header {
+            background-color: white;
+            padding: 40px 20px;
+            border-bottom: 8px solid var(--poster-pink);
+            background-image: linear-gradient(135deg, #fff 25%, var(--poster-beige) 25%, var(--poster-beige) 50%, #fff 50%, #fff 75%, var(--poster-beige) 75%, var(--poster-beige) 100%);
+            background-size: 20px 20px; /* 復古斜紋 */
+        }
+
+        .title-main {
+            font-size: 2.5rem;
+            margin: 10px 0;
+            font-weight: 900;
+            letter-spacing: 2px;
+            color: var(--primary-blue);
+            text-shadow: 3px 3px 0px var(--poster-pink);
+        }
+
+        .info-bar {
+            display: inline-block;
+            background-color: #4dc7a1; /* 海報上的綠色按鈕感 */
+            color: white;
+            padding: 10px 30px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            margin-top: 15px;
+            box-shadow: 4px 4px 0px var(--primary-blue);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 40px auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+            padding: 0 20px;
+        }
+
+        .card {
+            background: white;
+            border: 3px solid var(--primary-blue);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 8px 8px 0px var(--poster-pink);
+            transition: 0.3s;
+        }
+
+        .card:hover { transform: translate(-4px, -4px); box-shadow: 12px 12px 0px var(--poster-blue); }
+
+        .card-id { font-size: 0.9rem; font-weight: bold; color: #888; }
+        .card-name { font-size: 1.6rem; margin: 10px 0; font-weight: bold; }
+        .card-song { color: #666; margin-bottom: 20px; font-style: italic; }
+        .vote-num { font-size: 2.2rem; font-weight: 900; color: #ff4081; margin: 15px 0; }
+
+        .btn {
+            background-color: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .btn:disabled { background-color: #ccc; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div style="font-size: 1.2rem; font-weight: bold;">鑫的一年 X 離島最強巡演</div>
+        <div class="title-main">金門達人秀 · 浯島之星</div>
+        <div class="info-bar">05/09 (SAT.) @金門后湖海濱公園</div>
+    </div>
+
+    <div class="container" id="list">
+        <!-- 這裡會顯示選項 -->
+    </div>
+
+    <script>
+        // 1. 這裡直接使用你的 Firebase 設定
+        const firebaseConfig = {
+            apiKey: "AIzaSyCpWvar-xoAiBUvE9au6e6Ej_6hqb6dTtY",
+            authDomain: "km-star-vote.firebaseapp.com",
+            databaseURL: "https://km-star-vote-default-rtdb.firebaseio.com",
+            projectId: "km-star-vote",
+            storageBucket: "km-star-vote.firebasestorage.app",
+            messagingSenderId: "64460414938",
+            appId: "1:64460414938:web:76e6076768479edacb2ae3",
+            measurementId: "G-4L9QJHT37F"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // 2. 預設 20 組資料
+        // 這裡填入正式的參賽名單
+let candidates = [
+    { id: 1, name: "罐頭頭頭頭", song: "癡心無名氏" },
+    { id: 2, name: "火花想和花火續火花", song: "舞蹈表演" },
+    { id: 3, name: "Yori", song: "群青" },
+    { id: 4, name: "蹦米香", song: "團體舞蹈表演" },
+    { id: 5, name: "安淇", song: "臺語歌曲" },
+    { id: 6, name: "kirena", song: "舞蹈表演" },
+    { id: 7, name: "小呂", song: "海闊天空" },
+    { id: 8, name: "小MiniKo", song: "兒童街舞" },
+    { id: 9, name: "小胖不胖", song: "失眠" },
+    { id: 10, name: "萬惠文", song: "一首醉人的歌" },
+    { id: 11, name: "匿名用戶001", song: "失落沙洲" },
+    { id: 12, name: "跳跳糖", song: "團體舞蹈表演" },
+    { id: 13, name: "張皓勛", song: "唱歌" },
+    { id: 14, name: "小應/我不只是編號人", song: "火舞特技" },
+    { id: 15, name: "林沐希", song: "唱歌" },
+    { id: 16, name: "KDC", song: "街舞" },
+    { id: 17, name: "李明書", song: "爵士舞" },
+    { id: 18, name: "熾漪火舞feat.亂源劇團", song: "火舞表演團體" },
+    { id: 19, name: "烏瑪斯", song: "心跳動" },
+];
+
+        const votedKey = 'hasVoted_0509';
+        const userHasVoted = localStorage.getItem(votedKey);
+
+        // 監聽票數
+        db.ref('votes').on('value', (snapshot) => {
+            const data = snapshot.val() || {};
+            const listDiv = document.getElementById('list');
+            listDiv.innerHTML = '';
+
+            candidates.forEach(cand => {
+                const count = data[cand.id] || 0;
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-id">CANDIDATE ${String(cand.id).padStart(2, '0')}</div>
+                    <div class="card-name">${cand.name}</div>
+                    <div class="card-song">《${cand.song}》</div>
+                    <div class="vote-num">${count} <small style="font-size:1rem">票</small></div>
+                    <button class="btn" onclick="doVote(${cand.id})" ${userHasVoted ? 'disabled' : ''}>
+                        ${userHasVoted ? '已完成投票' : '投她一票'}
+                    </button>
+                `;
+                listDiv.appendChild(card);
+            });
+        });
+
+        // 投票功能
+        function doVote(id) {
+            if(localStorage.getItem(votedKey)) return alert('您已經投過票囉！');
+            
+            db.ref('votes/' + id).transaction((current) => {
+                return (current || 0) + 1;
+            }).then(() => {
+                localStorage.setItem(votedKey, 'true');
+                alert('感謝投票！');
+                location.reload();
+            });
+        }
+    </script>
+</body>
+</html>
